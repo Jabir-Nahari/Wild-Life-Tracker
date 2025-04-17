@@ -37,3 +37,10 @@ class Jungle_Environment:
     
     def result(self, state, action):
         pass
+    def action_cost(self, state, action, next_state):
+        pass
+    def is_goal(self, state):
+        pass
+    def h(self, node):
+        pass
+    
