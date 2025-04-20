@@ -134,9 +134,22 @@ class Jungle_Environment:
         return False
     
     def action_cost(self, state, action, next_state):
-        pass
+        s = list(state)
+        normal_actions = ['move-forward', 'turn-left', 'turn-right', 'pick']
+        n = list(next_state)
+        if n[6]<=0:
+            return -1000
+        if action in normal_actions:
+            return -2 # -1 for the action and -1 for the timer
+        if action == 'stay':
+            return -3 # To discourage halts
+        
     def is_goal(self, state):
-        pass
+        s = list(state)
+        if s[5] == s.ambulance and s[4] == 1 and s[3] == True and s[6] > 0:
+            return True
+        else:
+            False
     def h(self, node):
         pass
     
