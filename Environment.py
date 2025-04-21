@@ -2,7 +2,7 @@ class Jungle_Environment:
     _ORIENT_LEFT  = {'up':'left',  'left':'down', 'down':'right', 'right':'up'}  # given up (for example) - if i turn left what is my orient
     _ORIENT_RIGHT = {v:k for k,v in _ORIENT_LEFT.items()} # given up (for example) - if i turn left what is my orient
     _FWD_DELTA    = {'up':(-1,0), 'down':(1,0), 'left':(0,-1), 'right':(0,1)}
-    
+
     def __init__(self, N, ambulance, F_orientation, Needle_num,Trees_location,Shed_init_locaiton, Timer):
         self.N = N
         self.ambulance = ambulance
@@ -67,6 +67,9 @@ class Jungle_Environment:
             # only move if the cell is in‑bounds and not a tree
             if 0 <= (nr, nc) < self.N and (nr, nc) not in self.Trees_location:
                 (row, col) = (nr, nc)
+                # if Shed is caught by the agent, then when the agent moves, Shed also moves along with him
+                if caught:
+                    sr, sc = row, col
         elif action == 'throw-needle':
             needles -= 1
             # if Shed is in line‑of‑sight, put it into drugged sleep mode
@@ -83,7 +86,7 @@ class Jungle_Environment:
         if status == 1 and max(abs(row - sr), abs(col - sc)) <= 2:
             status = 2
 
-        # —— shed’s movement (only if awake & not caught) ———————
+        # shed’s movement (only if awake & not caught)
         if status == 2 and not caught:
             sr, sc = self._shed_next((sr, sc), (row, col), timer)
         
@@ -146,10 +149,45 @@ class Jungle_Environment:
         
     def is_goal(self, state):
         s = list(state)
-        if s[5] == s.ambulance and s[4] == 1 and s[3] == True and s[6] > 0:
+        if s[5] == s.ambulance and s[4] == 3 and s[3] and s[6] > 0:
             return True
         else:
             False
+
     def h(self, node):
-        pass
+        (row, col), orient, needles, caught, Shed_status, (srow, scol), timer = node.state
+
+        if self.is_goal(node.state):
+            return 0
+        
+        # if Shed saw the agent before (not in the initial sleep (escaping 2, druged sleep 3, or dead 0)). exploitative heuristic
+        if Shed_status != 1:
+            # if caught, the heuristic will be the manhattan distance between the agent and the ambulance
+            if caught:
+                return abs(row-self.ambulance[0])+abs(col-self.ambulance[1])
+            # if not caught, the manhattan distance between the agent and Shed
+            else:
+                return abs(row-srow)+abs(col-scol)
+            
+        
+        # here is when Shed is still in his initial sleep (status == 1), and the agent not yet found his location. the heuristic is explorative heuristic
+        visited = set()
+        n = node
+        while n:
+            visited.add(n.state[0])
+            n = n.parent
+
+        free_unvisited = 0
+        for dr, dc in self._FWD_DELTA.values():
+            nr, nc = row+dr, col+dc
+            if 0 <= nr < self.N and 0 <= nc < self.N and (nr, nc) not in self.Trees_location and (nr, nc) not in visited:
+                free_unvisited += 1
+        return -free_unvisited
+            
+
+        
+
+        
+        
+        
     
