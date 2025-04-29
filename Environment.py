@@ -13,6 +13,7 @@ class Jungle_Environment:
         self.Shed_init_location = Shed_init_locaiton
         self.Trees_location = Trees_location
         self.phase_toggle = 0  # start with even phase
+
         self.initial_state = (self.ambulance, self.F_orientation, self.Needle_num, False, 1, self.Shed_init_location)
 
     def actions(self, state):
@@ -93,28 +94,54 @@ class Jungle_Environment:
         return (row, col), orient, needles, caught, status, (sr, sc)
     
     def _shed_next(self, pos, agent_pos, phase):
-        """
-        Implements the pattern:
-        even step  -> 2 tiles directly away from agent
-        odd step   -> 2 tiles left (relative to agent)
-        If a step is blocked by a tree or boundary, Shed skips it.
-        """
         sr, sc = pos
         ar, ac = agent_pos
-        moves  = []
-        if phase == 0:
-            dr = 1 if sr > ar else -1 if sr < ar else 0
-            dc = 1 if sc > ac else -1 if sc < ac else 0
-            moves = [(sr + dr, sc + dc), (sr + 2*dr, sc + 2*dc)]
-        else:                                   # two steps to the agent's left
-            # 'Left' vector depends on agent‑to‑shed direction
-            lr, lc = -(ac - sc), ar - sr        # (dx,dy) rotated left
-            moves = [(sr + lr, sc + lc), (sr + 2*lr, sc + 2*lc)]
-
-        for r, c in moves:
-            if 0 <= r < self.N and 0 <= c < self.N and (r, c) not in self.Trees_location:
-                sr, sc = r, c
+        
+        if (sr, sc) == (ar, ac):
+            return sr, sc
+            
+        if phase == 0:  # Move away directly
+            # move along the axis with bigger absolute difference
+            if abs(sr - ar) >= abs(sc - ac):
+                dr = 1 if sr > ar else -1
+                new_r, new_c = sr + dr, sc
+            else:
+                dc = 1 if sc > ac else -1
+                new_r, new_c = sr, sc + dc
+    
+        else:  # Move to the agent's right
+            # compute direction vector agent -> shed
+            dr, dc = sr - ar, sc - ac
+            
+            # rotate (dr, dc) 90 degrees clockwise to get right vector
+            right_dr, right_dc = dc, -dr
+            
+            # normalize to move just one step
+            if right_dr > 0:
+                right_dr = 1
+            elif right_dr < 0:
+                right_dr = -1
+            else:
+                right_dr = 0
+            
+            if right_dc > 0:
+                right_dc = 1
+            elif right_dc < 0:
+                right_dc = -1
+            else:
+                right_dc = 0
+    
+            new_r = sr + right_dr
+            new_c = sc + right_dc
+    
+        # Validate new position
+        if (0 <= new_r < self.N and 
+            0 <= new_c < self.N and 
+            (new_r, new_c) not in self.Trees_location):
+            return new_r, new_c
+        
         return sr, sc
+
     
     def _clear_line(self, A, B, orient):
         """True iff A and B share row/col and no tree between them and A is looking toward B."""
@@ -183,30 +210,26 @@ class Jungle_Environment:
     def is_goal(self, state):
         (row, col), _, _, caught, _, _ = state
         return caught and (row, col) == self.ambulance
-
-    def h(self, node):
-        (row, col), _, _, caught, status, (srow, scol) = node.state
-
-        if self.is_goal(node.state):
-            return 0
-        if caught:
-            # Need to walk home
-            return abs(row - self.ambulance[0]) + abs(col - self.ambulance[1])
-        elif status == 3:
-            # Need to walk to Shed and pick up
-            return abs(row - srow) + abs(col - scol) + abs(srow - self.ambulance[0]) + abs(scol - self.ambulance[1])
-        else:
-            # Need to tranquilize and then return
-            return abs(row - srow) + abs(col - scol) + 2 + abs(srow - self.ambulance[0]) + abs(scol - self.ambulance[1])
-
-
-            
-
-            
-
-        
-
-        
-        
-        
     
+        
+    def perceive(self, state):
+        """
+        Given the agent's state, return what the agent can currently see
+        in the 5x5 window centered on (row, col).
+        """
+        (row, col), orient, needles, caught, status, (sr, sc) = state
+        visible = {}
+
+        # 5x5 window
+        for dr in range(-2, 3):
+            for dc in range(-2, 3):
+                r, c = row + dr, col + dc
+                if 0 <= r < self.N and 0 <= c < self.N:
+                    if (r, c) in self.Trees_location:
+                        visible[(r, c)] = 'tree'
+                    elif (r, c) == (sr, sc):
+                        visible[(r, c)] = 'shed'
+                    else:
+                        visible[(r, c)] = 'empty'
+
+        return visible
