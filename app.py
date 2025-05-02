@@ -9,8 +9,8 @@ import asyncio
 pygame.init()
 
 # Constants
-N = 20
-TILE_SIZE = 30
+N = random.randint(15,40)
+TILE_SIZE = 20
 GRID_WIDTH, GRID_HEIGHT = N, N
 TOP_LAYER_HEIGHT_RATIO = 0.70
 WIDTH, HEIGHT = TILE_SIZE * GRID_WIDTH, GRID_HEIGHT * TILE_SIZE
@@ -39,7 +39,11 @@ trees = set()
 agent = ""
 env = ""
 
-amb, ori, needles = (0,0), "right", 5
+if N < 27:
+    amb = (0, random.randint(0,GRID_HEIGHT))
+else:
+    amb = (random.randint(0, GRID_WIDTH), 0)
+ori, needles = "right", 5
 ax, ay = amb
         
 def run_env_agent():
@@ -61,7 +65,6 @@ def run_env_agent():
     
 
 
-# Helper: Wrap and draw text inside a rectangle
 def draw_text_wrapped(text, rect, font, color=pygame.Color('white'), wrap_on=None):
     """
     Draws text inside a pygame.Rect, splitting lines when 'wrap_on' is found.
@@ -111,7 +114,7 @@ def load_image(name, size=TILE_SIZE):
     path = f"game_assets/{name}"
     try:
         img = pygame.image.load(path).convert_alpha()
-        return pygame.transform.scale(img, (size+20, size))
+        return pygame.transform.scale(img, (size, size))
     except FileNotFoundError:
         print(f"Missing asset: {path}")
         return pygame.Surface((size, size))
@@ -120,7 +123,7 @@ tile_grass = load_image("Grass.jpg")
 tile_tree = load_image("Tree.png")
 tile_ambulance = load_image("Ambulance.png", size=TILE_SIZE)
 player_img = load_image("Drone.png", size=TILE_SIZE)
-animal_img = load_image("Shed.png", size=TILE_SIZE + 40)
+animal_img = load_image("Shed.png", size=TILE_SIZE + 50)
 
 # Create map
 map_data = [["grass" for _ in range(GRID_WIDTH)] for _ in range(GRID_HEIGHT)]
@@ -250,10 +253,9 @@ async def run_ui():
                     screen.blit(tile_grass, rect.topleft)
                     screen.blit(tile_ambulance, rect.topleft)
 
-        vision_rects = agent_sprite.get_vision_area()  # Now using vision_range instead of radius
+        vision_rects = agent_sprite.get_vision_area()
         vision_surface = pygame.Surface((TILE_SIZE, TILE_SIZE), pygame.SRCALPHA)
-        vision_surface.fill(VISION_COLOR)  # This is your semi-transparent yellow
-
+        vision_surface.fill(VISION_COLOR)
         for vx, vy in vision_rects:
             screen.blit(vision_surface, (vx * TILE_SIZE, vy * TILE_SIZE))
         agent_sprite.draw(screen)
