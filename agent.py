@@ -2,7 +2,7 @@
 import sys, random
 from Environment import Jungle_Environment
 from search_algorithim import astar_search, get_path_actions, get_path_states
-
+import asyncio
 # ───── make Windows console UTF-8 so emojis don't crash ─────
 if sys.platform.startswith("win") and (sys.stdout.encoding or "").lower() != "utf-8":
     sys.stdout.reconfigure(encoding="utf-8")
@@ -75,7 +75,7 @@ class AStarAgent:
 # ------------------------------------------------------------
     def h_expl_fast(self, node):
         (r, c), orient, needles, caught, status, (sr, sc) = node.state
-        ar, ac = env.ambulance          #  const for the whole problem
+        ar, ac = self.env.ambulance          #  const for the whole problem
 
         # --------------------------------------------------------
         # 1.  AFTER THE SHED HAS BEEN PICKED  (caught == True)
@@ -232,41 +232,42 @@ class AStarAgent:
         self.plan_states = get_path_states(node)
         return bool(self.plan_actions)
     
-    def run(self, max_steps=1000):
-        step = 0
+    async def run(self, max_steps=1000):
+        self.step = 0
+        self.max_steps = max_steps
         while not self.is_goal(self.current_state):
-            if step >= max_steps or not self.plan():
-                print(f"❌  Agent failed after {step} steps.")
+            if self.step >= max_steps or not self.plan():
+                print(f"❌  Agent failed after {self.step} steps.")
                 return
             
-            action = self.plan_actions.pop(0)
+            self.action = self.plan_actions.pop(0)
             agent_pos, orient, needles, caught, status, shed_pos = self.current_state
-            print(f"Step {step:6}: {action} | Agent: {agent_pos} | Shed: {shed_pos} | Status: {status} | Caught: {caught}")
+            print(f"Step {self.step:6}: {self.action} | Agent: {agent_pos} | Shed: {shed_pos} | Status: {status} | Caught: {caught}")
             
-            self.current_state = self.result(self.current_state, action)
+            self.current_state = self.result(self.current_state, self.action)
             self.update_knowledge(self.env.perceive(self.current_state))
             
             *_, status, (sr, sc) = self.current_state
             if status != 1 or (sr, sc) in self.knowledge:
                 self.phase = "exploitation"
             
-            step += 1
-        
-        print(f"\n✅  Mission complete in {step} steps!")
+            self.step += 1
+            await asyncio.sleep(0) 
+        print(f"\n✅  Mission complete in {self.step} steps!")
 
 # ───────────── driver ─────────────
-if __name__ == "__main__":
-    N, amb, ori, needles = 50, (0,0), "right", 5
-    shed = (30,20)
-    trees = set()
-    while len(trees) < 50:
-        trees.add((random.randint(5,N-1), random.randint(5,N-1)))
+# if __name__ == "__main__":
+#     N, amb, ori, needles = 50, (0,0), "right", 5
+#     shed = (30,20)
+#     trees = set()
+#     while len(trees) < 50:
+#         trees.add((random.randint(5,N-1), random.randint(5,N-1)))
     
-    for r in range(min(amb[0], shed[0]), max(amb[0], shed[0])+1):
-        for c in range(min(amb[1], shed[1]), max(amb[1], shed[1])+1):
-            if (r,c) in trees and (r,c) != amb and (r,c) != shed:
-                trees.remove((r,c))
+#     for r in range(min(amb[0], shed[0]), max(amb[0], shed[0])+1):
+#         for c in range(min(amb[1], shed[1]), max(amb[1], shed[1])+1):
+#             if (r,c) in trees and (r,c) != amb and (r,c) != shed:
+#                 trees.remove((r,c))
     
-    env = Jungle_Environment(N, amb, ori, needles, shed, trees)
-    agent = AStarAgent(env)
-    agent.run()
+#     env = Jungle_Environment(N, amb, ori, needles, shed, trees)
+#     agent = AStarAgent(env)
+#     agent.run()

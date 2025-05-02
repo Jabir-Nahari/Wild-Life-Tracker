@@ -15,6 +15,7 @@ class Jungle_Environment:
         self.phase_toggle = 0  # start with even phase
 
         self.initial_state = (self.ambulance, self.F_orientation, self.Needle_num, False, 1, self.Shed_init_location)
+        self.state = self.initial_state
 
     def actions(self, state):
         available_actions = ['move-forward', 'turn-left', 'turn-right', 'throw-needle', 'pick', 'stay']
@@ -91,6 +92,7 @@ class Jungle_Environment:
             sr, sc = self._shed_next((sr, sc), (row, col), self.phase_toggle)
 
         self.phase_toggle = 1 - self.phase_toggle
+        self.state = ((row, col), orient, needles, caught, status, (sr, sc))
         return (row, col), orient, needles, caught, status, (sr, sc)
     
     def _shed_next(self, pos, agent_pos, phase):
