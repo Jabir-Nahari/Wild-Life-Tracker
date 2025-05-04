@@ -9,7 +9,7 @@ import asyncio
 pygame.init()
 
 # Constants
-N = random.randint(15,40)
+N = random.randint(20,25)
 TILE_SIZE = 20
 GRID_WIDTH, GRID_HEIGHT = N, N
 TOP_LAYER_HEIGHT_RATIO = 0.70
@@ -120,10 +120,10 @@ def load_image(name, size=TILE_SIZE):
         return pygame.Surface((size, size))
 
 tile_grass = load_image("Grass.jpg")
-tile_tree = load_image("Tree.png")
-tile_ambulance = load_image("Ambulance.png", size=TILE_SIZE)
+tile_tree = load_image("Tree.png", size=TILE_SIZE+5)
+tile_ambulance = load_image("ambulance-car.png", size=TILE_SIZE)
 player_img = load_image("Drone.png", size=TILE_SIZE)
-animal_img = load_image("Shed.png", size=TILE_SIZE + 50)
+animal_img = load_image("Shed.png", size=TILE_SIZE+30)
 
 # Create map
 map_data = [["grass" for _ in range(GRID_WIDTH)] for _ in range(GRID_HEIGHT)]
@@ -134,9 +134,26 @@ run_env_agent()
 def create_trees():
     global trees
     global N
-    while len(trees) < 50:
-        trees.add((random.randint(5,N-1), random.randint(5,N-1)))
+    max_trees = 50
+    min_distance = 2  # Minimum tile distance between trees
+
+    attempts = 0
+    max_attempts = 500  # To prevent infinite loops
+
+    while len(trees) < max_trees and attempts < max_attempts:
+        x = random.randint(0, N - 1)
+        y = random.randint(0, N - 1)
+        too_close = False
+        for tx, ty in trees:
+            if abs(tx - x) < min_distance and abs(ty - y) < min_distance:
+                too_close = True
+                break
+        if not too_close:
+            trees.add((x, y))
+        attempts += 1
+
     env.Trees_location = trees
+
     
 create_trees()
 
@@ -155,7 +172,11 @@ class Agent:
         self.direction = agent.current_state[1]  # 0: up, 1: right, 2: down, 3: left
 
     def draw(self, surface):
+    # Draw red dot for tile location
+        center = (self.x * TILE_SIZE + TILE_SIZE // 2, self.y * TILE_SIZE + TILE_SIZE // 2)
+        pygame.draw.circle(surface, (255, 0, 0), center, 3)  # Red dot
         surface.blit(player_img, (self.x * TILE_SIZE, self.y * TILE_SIZE))
+
 
     def get_vision_area(self):
         vision_tiles = []
@@ -196,7 +217,11 @@ class Animal:
         self.x, self.y = animal_pos
 
     def draw(self, surface):
+    # Draw blue dot for tile location
+        center = (self.x * TILE_SIZE + TILE_SIZE // 2, self.y * TILE_SIZE + TILE_SIZE // 2)
+        pygame.draw.circle(surface, (0, 0, 255), center, 3)  # Blue dot
         surface.blit(animal_img, (self.x * TILE_SIZE, self.y * TILE_SIZE))
+
         
     def update_animal_position(self, surface):
         self.x, self.y = animal_pos
@@ -237,20 +262,25 @@ async def run_ui():
 
         agent_sprite.update_agent()
 
-    
 
         screen.fill(WHITE)
-
+        
         for y in range(GRID_HEIGHT):
             for x in range(GRID_WIDTH):
                 rect = pygame.Rect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE)
                 if map_data[y][x] == "grass":
-                    screen.blit(tile_grass, rect.topleft)
+                # Checkerboard coloring
+                    if (x + y) % 2 == 0:
+                        pygame.draw.rect(screen, (0, 100, 0), rect)  # Dark green
+                    else:
+                        pygame.draw.rect(screen, (34, 139, 34) , rect)  # Light green
+
                 elif map_data[y][x] == "tree":
-                    screen.blit(tile_grass, rect.topleft)
+                    pygame.draw.rect(screen, (34, 139, 34), rect)
+                    #screen.blit(tile_grass, rect.topleft)
                     screen.blit(tile_tree, rect.topleft)
                 elif map_data[y][x] == "ambulance":
-                    screen.blit(tile_grass, rect.topleft)
+                    pygame.draw.rect(screen, (0, 100, 0), rect)  # Fill with white tile instead of grass
                     screen.blit(tile_ambulance, rect.topleft)
 
         vision_rects = agent_sprite.get_vision_area()
