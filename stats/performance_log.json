@@ -8,5 +8,55 @@
     "success": true,
     "steps": 51,
     "needles_left": 4
+  },
+  {
+    "success": true,
+    "steps": 58,
+    "needles_left": 4
+  },
+  {
+    "success": true,
+    "steps": 121,
+    "needles_left": 4
+  },
+  {
+    "success": true,
+    "steps": 65,
+    "needles_left": 4
+  },
+  {
+    "success": true,
+    "steps": 17,
+    "needles_left": 4
+  },
+  {
+    "success": true,
+    "steps": 36,
+    "needles_left": 4
+  },
+  {
+    "success": true,
+    "steps": 86,
+    "needles_left": 4
+  },
+  {
+    "success": true,
+    "steps": 43,
+    "needles_left": 4
+  },
+  {
+    "success": true,
+    "steps": 174,
+    "needles_left": 4
+  },
+  {
+    "success": true,
+    "steps": 90,
+    "needles_left": 4
+  },
+  {
+    "success": true,
+    "steps": 54,
+    "needles_left": 4
   }
 ]
