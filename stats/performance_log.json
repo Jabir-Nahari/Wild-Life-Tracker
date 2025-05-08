@@ -58,5 +58,15 @@
     "success": true,
     "steps": 54,
     "needles_left": 4
+  },
+  {
+    "success": true,
+    "steps": 68,
+    "needles_left": 4
+  },
+  {
+    "success": true,
+    "steps": 88,
+    "needles_left": 4
   }
 ]
